@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Type, Palette, Move, Download, Save } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Type, Palette, Move, Download, Save, Wand2, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from '@/hooks/use-toast';
 
 const FONTS = [
   { name: 'Space Grotesk', value: 'Space Grotesk, sans-serif' },
@@ -35,6 +35,15 @@ const ANIMATIONS = [
   { name: 'Float', value: 'animate-float' },
 ];
 
+const AI_SUGGESTIONS = [
+  'Make it look like fire 🔥',
+  'Neon glow style ✨',
+  'Retro pixel look 👾',
+  'Elegant gold script 👑',
+  'Ice cold vibes ❄️',
+  'Rainbow party 🌈',
+];
+
 const Creator = () => {
   const { t } = useLanguage();
   const [text, setText] = useState('HELLO');
@@ -42,10 +51,76 @@ const Creator = () => {
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState([48]);
   const [animation, setAnimation] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [saved, setSaved] = useState<Array<{ text: string; font: string; color: string; size: number; animation: string }>>([]);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const handleSave = () => {
     setSaved(prev => [...prev, { text, font, color, size: size[0], animation }]);
+    toast({ title: t('saved'), description: 'Emoji saved to your collection!' });
+  };
+
+  const handleDownload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 512, 512);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.min(size[0] * 2, 160)}px ${font}`;
+    ctx.fillStyle = color;
+    ctx.fillText(text || 'EMOJI', 256, 256);
+
+    const link = document.createElement('a');
+    link.download = `${text.toLowerCase().replace(/\s+/g, '-') || 'emoji'}-custom.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    toast({ title: t('downloaded'), description: 'Share it on Instagram, Facebook, X, and more! 📱' });
+  };
+
+  const handleAiCustomize = (prompt: string) => {
+    setIsAiLoading(true);
+    // Simulate AI customization by changing styles based on prompt
+    setTimeout(() => {
+      const lower = prompt.toLowerCase();
+      if (lower.includes('fire') || lower.includes('hot')) {
+        setColor('hsl(25, 95%, 60%)');
+        setFont('fantasy');
+        setAnimation('animate-pulse');
+      } else if (lower.includes('neon') || lower.includes('glow')) {
+        setColor('hsl(265, 90%, 65%)');
+        setAnimation('animate-pulse');
+      } else if (lower.includes('retro') || lower.includes('pixel')) {
+        setFont('JetBrains Mono, monospace');
+        setColor('hsl(150, 80%, 55%)');
+        setAnimation('');
+      } else if (lower.includes('gold') || lower.includes('elegant')) {
+        setColor('hsl(45, 90%, 55%)');
+        setFont('Georgia, serif');
+        setAnimation('');
+      } else if (lower.includes('ice') || lower.includes('cold') || lower.includes('frozen')) {
+        setColor('hsl(200, 80%, 60%)');
+        setAnimation('animate-float');
+      } else if (lower.includes('rainbow') || lower.includes('party')) {
+        setColor('hsl(330, 85%, 65%)');
+        setFont('cursive');
+        setAnimation('animate-bounce');
+      } else {
+        // Random style
+        setColor(COLORS[Math.floor(Math.random() * COLORS.length)]);
+        setFont(FONTS[Math.floor(Math.random() * FONTS.length)].value);
+        setAnimation(ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)].value);
+      }
+      setIsAiLoading(false);
+      toast({ title: '✨ AI Applied!', description: `Style updated based on: "${prompt}"` });
+    }, 1200);
   };
 
   return (
@@ -55,37 +130,79 @@ const Creator = () => {
           {t('createEmoji')}
         </span>
       </h1>
-      <p className="text-muted-foreground mb-8 text-sm">Design your own word-style emoji</p>
+      <p className="text-muted-foreground mb-8 text-sm">{t('designYourOwn')}</p>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Preview */}
-        <div className="glass-card rounded-2xl p-8 flex items-center justify-center min-h-[300px]">
-          <motion.div
-            key={`${text}-${font}-${color}-${size[0]}-${animation}`}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={animation}
-          >
-            <span
-              style={{
-                fontFamily: font,
-                fontSize: `${size[0]}px`,
-                color,
-                fontWeight: 'bold',
-                textShadow: `0 0 20px ${color}40, 0 0 40px ${color}20`,
-              }}
+        <div className="space-y-4">
+          <div ref={previewRef} className="glass-card rounded-2xl p-8 flex items-center justify-center min-h-[300px]">
+            <motion.div
+              key={`${text}-${font}-${color}-${size[0]}-${animation}`}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className={animation}
             >
-              {text || 'Type...'}
-            </span>
-          </motion.div>
+              <span
+                style={{
+                  fontFamily: font,
+                  fontSize: `${size[0]}px`,
+                  color,
+                  fontWeight: 'bold',
+                  textShadow: `0 0 20px ${color}40, 0 0 40px ${color}20`,
+                }}
+              >
+                {text || 'Type...'}
+              </span>
+            </motion.div>
+          </div>
+
+          {/* Download button */}
+          <Button onClick={handleDownload} variant="outline" className="w-full glass-card border-border">
+            <Download size={16} className="mr-2" /> {t('downloadForSocial')}
+          </Button>
         </div>
 
         {/* Controls */}
-        <div className="space-y-6">
+        <div className="space-y-5">
+          {/* AI Customize */}
+          <div className="glass-card rounded-xl p-4 border border-primary/30">
+            <label className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              <Wand2 size={16} className="text-primary" /> {t('aiCustomize')}
+            </label>
+            <div className="flex gap-2 mt-2">
+              <Input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={t('aiPlaceholder')}
+                className="glass-card border-border flex-1"
+                onKeyDown={(e) => { if (e.key === 'Enter' && aiPrompt) handleAiCustomize(aiPrompt); }}
+              />
+              <Button
+                onClick={() => aiPrompt && handleAiCustomize(aiPrompt)}
+                disabled={isAiLoading || !aiPrompt}
+                className="gradient-primary text-primary-foreground"
+                size="sm"
+              >
+                {isAiLoading ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+              </Button>
+            </div>
+            <div className="flex gap-2 flex-wrap mt-3">
+              {AI_SUGGESTIONS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => { setAiPrompt(s); handleAiCustomize(s); }}
+                  className="text-[11px] px-2.5 py-1 rounded-full glass-card text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Text Input */}
           <div>
             <label className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-              <Type size={16} /> Text
+              <Type size={16} /> {t('textLabel')}
             </label>
             <Input
               value={text}
@@ -170,14 +287,21 @@ const Creator = () => {
       {/* Saved creations */}
       {saved.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Your Creations</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('yourCreations')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {saved.map((s, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="glass-card rounded-xl p-4 flex items-center justify-center h-24"
+                className="glass-card rounded-xl p-4 flex items-center justify-center h-24 cursor-pointer hover:neon-glow transition-all"
+                onClick={() => {
+                  setText(s.text);
+                  setFont(s.font);
+                  setColor(s.color);
+                  setSize([s.size]);
+                  setAnimation(s.animation);
+                }}
               >
                 <span
                   className={s.animation}
