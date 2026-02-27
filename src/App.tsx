@@ -8,10 +8,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import Layout from "@/components/Layout";
+import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Creator from "./pages/Creator";
 import Favorites from "./pages/Favorites";
-import Chat from "./pages/Chat";
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -30,10 +30,10 @@ const App = () => (
               <BrowserRouter>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Index />} />
+                    <Route path="/" element={<Home />} />
+                    <Route path="/marketplace" element={<Index />} />
                     <Route path="/creator" element={<Creator />} />
                     <Route path="/favorites" element={<Favorites />} />
-                    <Route path="/chat" element={<Chat />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
