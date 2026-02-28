@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { toast } from '@/hooks/use-toast';
 
 const FONTS = [
@@ -33,6 +34,7 @@ const ANIMATIONS = [
   { name: 'Pulse', value: 'animate-pulse' },
   { name: 'Spin', value: 'animate-spin' },
   { name: 'Float', value: 'animate-float' },
+  { name: 'Wiggle', value: 'animate-wiggle' },
 ];
 
 const AI_SUGGESTIONS = [
@@ -46,6 +48,7 @@ const AI_SUGGESTIONS = [
 
 const Creator = () => {
   const { t } = useLanguage();
+  const { addItem } = useLibrary();
   const [text, setText] = useState('HELLO');
   const [font, setFont] = useState(FONTS[0].value);
   const [color, setColor] = useState(COLORS[0]);
@@ -54,40 +57,62 @@ const Creator = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [saved, setSaved] = useState<Array<{ text: string; font: string; color: string; size: number; animation: string }>>([]);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const handleSave = () => {
     setSaved(prev => [...prev, { text, font, color, size: size[0], animation }]);
-    toast({ title: t('saved'), description: 'Emoji saved to your collection!' });
+    addItem({
+      name: text || 'Custom Emoji',
+      emoji: text,
+      type: 'word',
+      color,
+      fontFamily: font,
+      fontSize: size[0],
+      animation,
+    });
+    toast({ title: t('saved'), description: 'Emoji saved to your library!' });
   };
 
   const handleDownload = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    const canvasSize = 512;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, 512, 512);
+    // Transparent circular crop
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+    ctx.beginPath();
+    ctx.arc(canvasSize / 2, canvasSize / 2, canvasSize / 2, 0, Math.PI * 2);
+    ctx.clip();
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `bold ${Math.min(size[0] * 2, 160)}px ${font}`;
     ctx.fillStyle = color;
-    ctx.fillText(text || 'EMOJI', 256, 256);
+    ctx.fillText(text || 'EMOJI', canvasSize / 2, canvasSize / 2);
 
     const link = document.createElement('a');
     link.download = `${text.toLowerCase().replace(/\s+/g, '-') || 'emoji'}-custom.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
+    // Also save to library
+    addItem({
+      name: text || 'Custom Emoji',
+      emoji: text,
+      type: 'word',
+      color,
+      fontFamily: font,
+      fontSize: size[0],
+      animation,
+    });
+
     toast({ title: t('downloaded'), description: 'Share it on Instagram, Facebook, X, and more! 📱' });
   };
 
   const handleAiCustomize = (prompt: string) => {
     setIsAiLoading(true);
-    // Simulate AI customization by changing styles based on prompt
     setTimeout(() => {
       const lower = prompt.toLowerCase();
       if (lower.includes('fire') || lower.includes('hot')) {
@@ -113,7 +138,6 @@ const Creator = () => {
         setFont('cursive');
         setAnimation('animate-bounce');
       } else {
-        // Random style
         setColor(COLORS[Math.floor(Math.random() * COLORS.length)]);
         setFont(FONTS[Math.floor(Math.random() * FONTS.length)].value);
         setAnimation(ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)].value);
@@ -135,7 +159,7 @@ const Creator = () => {
       <div className="grid md:grid-cols-2 gap-8">
         {/* Preview */}
         <div className="space-y-4">
-          <div ref={previewRef} className="glass-card rounded-2xl p-8 flex items-center justify-center min-h-[300px]">
+          <div className="glass-card rounded-2xl p-8 flex items-center justify-center min-h-[300px]">
             <motion.div
               key={`${text}-${font}-${color}-${size[0]}-${animation}`}
               initial={{ scale: 0.5, opacity: 0 }}
@@ -156,7 +180,6 @@ const Creator = () => {
             </motion.div>
           </div>
 
-          {/* Download button */}
           <Button onClick={handleDownload} variant="outline" className="w-full glass-card border-border">
             <Download size={16} className="mr-2" /> {t('downloadForSocial')}
           </Button>

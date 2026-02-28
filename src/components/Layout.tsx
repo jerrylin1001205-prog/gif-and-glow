@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Store, Sparkles, Trophy, Settings, Star } from 'lucide-react';
+import { Home, Store, Sparkles, Trophy, Settings, Star, BookOpen, CreditCard, Film } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -14,10 +14,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/', icon: Home, label: t('home') },
     { path: '/marketplace', icon: Store, label: t('marketplace') },
     { path: '/creator', icon: Sparkles, label: t('creator') },
+    { path: '/gif-studio', icon: Film, label: 'GIF' },
+    { path: '/library', icon: BookOpen, label: t('library') },
     { path: '/favorites', icon: Star, label: t('favorites') },
     { path: '/leaderboard', icon: Trophy, label: t('leaderboard') },
+    { path: '/pricing', icon: CreditCard, label: t('pricing') },
     { path: '/settings', icon: Settings, label: t('settings') },
   ];
+
+  const mobileItems = navItems.slice(0, 5);
 
   return (
     <div
@@ -34,13 +39,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </span>
           </Link>
         </div>
-        <nav className="flex-1 px-2 lg:px-4 space-y-1">
+        <nav className="flex-1 px-2 lg:px-4 space-y-1 overflow-y-auto scrollbar-hide">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = pathname === path;
             return (
               <Link key={path} to={path}>
                 <motion.div
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                     isActive
                       ? 'gradient-primary text-primary-foreground neon-glow'
                       : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -48,7 +53,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   whileHover={{ x: 4 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <Icon size={20} />
+                  <Icon size={18} />
                   <span className="hidden lg:block text-sm font-medium">{label}</span>
                 </motion.div>
               </Link>
@@ -73,7 +78,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-card border-t border-border z-50">
         <div className="flex justify-around items-center h-16 px-1">
-          {navItems.slice(0, 5).map(({ path, icon: Icon, label }) => {
+          {mobileItems.map(({ path, icon: Icon, label }) => {
             const isActive = pathname === path;
             return (
               <Link key={path} to={path} className="flex flex-col items-center gap-0.5 min-w-0">

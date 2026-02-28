@@ -16,7 +16,10 @@ const LanguageContext = createContext<LanguageContextType>({
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('emojiverse-lang');
-    return (saved as Language) || 'en';
+    // Validate saved language is still supported
+    const validLangs: Language[] = ['en', 'zh', 'es', 'hi', 'ar'];
+    if (saved && validLangs.includes(saved as Language)) return saved as Language;
+    return 'en';
   });
 
   const handleSetLanguage = (lang: Language) => {
