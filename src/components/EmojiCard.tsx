@@ -4,6 +4,7 @@ import { Star, ShoppingCart, Check, Download } from 'lucide-react';
 import { Emoji } from '@/lib/emojis';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useCart } from '@/contexts/CartContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -15,44 +16,53 @@ interface EmojiCardProps {
 const EmojiCard = ({ emoji, index = 0 }: EmojiCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToCart, isInCart } = useCart();
+  const { addItem } = useLibrary();
   const { t } = useLanguage();
   const starred = isFavorite(emoji.id);
   const inCart = isInCart(emoji.id);
 
   const handleDownload = () => {
-    // Create a canvas to render the emoji for download
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    const size = 512;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Background
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, 256, 256);
+    // Transparent circular crop
+    ctx.clearRect(0, 0, size, size);
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.clip();
 
-    // Emoji text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     if (emoji.category === 'word') {
-      ctx.font = `bold 48px ${emoji.fontFamily || 'sans-serif'}`;
+      ctx.font = `bold 120px ${emoji.fontFamily || 'sans-serif'}`;
       ctx.fillStyle = '#a855f7';
     } else {
-      ctx.font = '100px sans-serif';
-      ctx.fillStyle = '#ffffff';
+      ctx.font = '200px sans-serif';
     }
-    ctx.fillText(emoji.emoji, 128, 128);
+    ctx.fillText(emoji.emoji, size / 2, size / 2);
 
-    // Download
     const link = document.createElement('a');
     link.download = `${emoji.name.toLowerCase().replace(/\s+/g, '-')}-emojiverse.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
+    // Also save to library
+    addItem({
+      name: emoji.name,
+      emoji: emoji.emoji,
+      type: emoji.category === 'all' ? 'standard' : (emoji.category as any),
+      fontFamily: emoji.fontFamily,
+      animation: emoji.animationClass,
+    });
+
     toast({
       title: t('downloaded'),
-      description: `${emoji.name} saved! Share it on social media 🎉`,
+      description: `${emoji.name} saved to your library! 🎉`,
     });
   };
 
@@ -74,7 +84,7 @@ const EmojiCard = ({ emoji, index = 0 }: EmojiCardProps) => {
         )}
       </div>
 
-      {/* Star button - always visible on mobile */}
+      {/* Star button */}
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite(emoji.id); }}
         className="absolute top-2 left-2 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1"
@@ -108,7 +118,6 @@ const EmojiCard = ({ emoji, index = 0 }: EmojiCardProps) => {
           {emoji.price === 0 ? t('free') : `$${emoji.price.toFixed(2)}`}
         </span>
         <div className="flex gap-1">
-          {/* Download button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={(e) => { e.stopPropagation(); handleDownload(); }}
@@ -117,7 +126,6 @@ const EmojiCard = ({ emoji, index = 0 }: EmojiCardProps) => {
           >
             <Download size={14} />
           </motion.button>
-          {/* Cart button for paid items */}
           {emoji.price > 0 && (
             <motion.button
               whileTap={{ scale: 0.9 }}
