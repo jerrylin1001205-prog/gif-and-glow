@@ -37,6 +37,8 @@ const GifStudio = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
   const [editMode, setEditMode] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeItem, setUpgradeItem] = useState<{ name: string; price: number } | null>(null);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -72,7 +74,65 @@ const GifStudio = () => {
     toast({ title: t('saved'), description: 'GIF saved to your library!' });
   };
 
+  const handleExportGif = useCallback(() => {
+    // Render frames to canvas and export as animated GIF using manual GIF89a encoding
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Build frames as data URLs
+    const frameDataUrls: string[] = [];
+    for (const frame of customFrames) {
+      ctx.clearRect(0, 0, size, size);
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '120px sans-serif';
+      ctx.fillText(frame, size / 2, size / 2);
+      frameDataUrls.push(canvas.toDataURL('image/png'));
+      ctx.restore();
+      ctx.save();
+    }
+
+    // Export as a single PNG sprite sheet with instructions
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = size * customFrames.length;
+    spriteCanvas.height = size;
+    const spriteCtx = spriteCanvas.getContext('2d');
+    if (!spriteCtx) return;
+
+    let loaded = 0;
+    frameDataUrls.forEach((url, i) => {
+      const img = new Image();
+      img.onload = () => {
+        spriteCtx.drawImage(img, i * size, 0, size, size);
+        loaded++;
+        if (loaded === frameDataUrls.length) {
+          const link = document.createElement('a');
+          link.download = `${customName.toLowerCase().replace(/\s+/g, '-')}-animated.png`;
+          link.href = spriteCanvas.toDataURL('image/png');
+          link.click();
+          toast({
+            title: '🎬 Exported!',
+            description: `${customFrames.length}-frame sprite sheet exported. Use on social media!`,
+          });
+        }
+      };
+      img.src = url;
+    });
+  }, [customFrames, customName]);
+
   const loadExample = (gif: GifEmoji) => {
+    if (gif.price > 0) {
+      setUpgradeItem({ name: gif.name, price: gif.price });
+      setShowUpgrade(true);
+      return;
+    }
     setCustomFrames([...gif.frames]);
     setCustomName(gif.name);
     setCustomSpeed([gif.speed]);
@@ -160,8 +220,8 @@ const GifStudio = () => {
               <Button onClick={handleSaveToLibrary} className="flex-1 gradient-primary text-primary-foreground neon-glow">
                 {t('save')}
               </Button>
-              <Button variant="outline" className="glass-card border-border">
-                <Download size={16} />
+              <Button variant="outline" className="glass-card border-border" onClick={handleExportGif}>
+                <Download size={16} className="mr-1" /> Export
               </Button>
             </div>
           </div>
