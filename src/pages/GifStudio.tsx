@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Film, Play, Pause, Plus, Download, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { Film, Play, Pause, Plus, Download, Pencil, Trash2, ChevronRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -8,6 +8,7 @@ import { EXAMPLE_GIFS, GifEmoji } from '@/lib/emojis';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { toast } from '@/hooks/use-toast';
+import UpgradeModal from '@/components/UpgradeModal';
 
 const GifPlayer = ({ gif, size = 'lg' }: { gif: GifEmoji; size?: 'sm' | 'lg' }) => {
   const [frameIndex, setFrameIndex] = useState(0);
