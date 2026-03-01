@@ -253,10 +253,10 @@ const GifStudio = () => {
                   </span>
                   <span className="text-[10px] text-muted-foreground">{gif.creator}</span>
                 </div>
-                {/* Edit overlay */}
+                {/* Edit/Lock overlay */}
                 <div className="absolute inset-0 rounded-xl bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="text-xs font-semibold text-primary flex items-center gap-1">
-                    <Pencil size={12} /> {t('editGif')}
+                    {gif.price > 0 ? <><Lock size={12} /> Pro Only</> : <><Pencil size={12} /> {t('editGif')}</>}
                   </span>
                 </div>
               </motion.div>
@@ -264,6 +264,13 @@ const GifStudio = () => {
           </div>
         </div>
       </div>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        itemName={upgradeItem?.name}
+        itemPrice={upgradeItem?.price}
+      />
     </div>
   );
 };
